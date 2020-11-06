@@ -17,7 +17,7 @@ def get_troop_data(df, direction=None):
     elif direction == 'R':
         df = get_data(RET_FILENAME)
 
-    df = df[["LONP", "LATP", "SURV", "DIR", "DIV"]]
+    df = df[["LONP", "LATP", "SURV", "DIR", "DIV", "ORD"]]
     return df[df["LONP"].notna()]
 
 
@@ -37,7 +37,7 @@ def get_temp_data(df):
     df['DATE'] = df[['DAY', 'MON']].agg('-'.join, axis=1)
     df = df.drop(columns=["MON", "DAY"])
     df = df.replace('nan-nan', np.nan)
-    df["DATE"] = df.fillna("").apply(axis=1, func=lambda row: "{}°C  {}"
+    df["DATE"] = df.fillna("").apply(axis=1, func=lambda row: "{}°  {}"
                                      .format(str(row[1])[:-2], row[3].replace("-", ", ")))
 
     return df

@@ -9,14 +9,17 @@ CFG = cfg['DEFAULT']
 
 def chart_troops(troops, advancing=True):
     if advancing:
-        domain = ['1', '2', '3']
+        domain = CFG['AdvDomain'].split(',')
     else:
-        domain = ['4', '5', '6']
+        domain = CFG['RetDomain'].split(',')
+    colors = CFG['AdvColors'].split(',') + CFG['RetColors'].split(',')
 
-    colors = [CFG['Div1AdvColor'], CFG['Div2AdvColor'], CFG['Div3AdvColor'],
-              CFG['Div1RetColor'], CFG['Div2RetColor'], CFG['Div3RetColor']]
-
-    return alt.Chart(troops).mark_trail().encode(
+    return alt.Chart(troops).mark_trail(order=False).encode(
+        x=alt.X(
+            'LONP:Q',
+            scale=alt.Scale(domain=[troops["LONP"].min(), troops["LONP"].max()]),
+            axis=alt.Axis(title=None, labels=False, grid=True, gridColor=CFG['TempGridColor'])
+            ),
         longitude='LONP:Q',
         latitude='LATP:Q',
         size=alt.Size(
@@ -24,7 +27,6 @@ def chart_troops(troops, advancing=True):
             scale=alt.Scale(range=[int(i) for i in CFG['TroopScale'].split(',')]),
             legend=None
         ),
-        detail='DIV',
         color=alt.Color(
             'DIV',
             scale=alt.Scale(
@@ -34,7 +36,6 @@ def chart_troops(troops, advancing=True):
             legend=None
         ),
         tooltip=[
-            alt.Tooltip('DIV', title='Division'),
             alt.Tooltip('SURV', title='Troop Numbers'),
             alt.Tooltip('DIR', title='Direction'),
             alt.Tooltip('LONP', title='Longitude'),
@@ -47,34 +48,42 @@ def chart_troop_labels(troops):
     return alt.Chart(troops).mark_text(
         font=CFG['LabelFont'],
         fontSize=int(CFG['TroopLabelSize']),
-        dx=int(CFG['TroopLabelDX']),
-        dy=int(CFG['TroopLabelDY']),
+        dx=int(CFG['TroopLabelDx']),
+        dy=int(CFG['TroopLabelDy']),
         angle=int(CFG['TroopLabelAngle'])
     ).encode(
+        x='LONP:Q',
         longitude="LONP:Q",
         latitude="LATP:Q",
         text="SURV"
     )
 
 
-def chart_cities(cities):
+def chart_cities(cities, troops):
     return alt.Chart(cities).mark_circle(
         size=int(CFG['CitySize']),
         color=CFG['CityColor']
     ).encode(
+        x='LONC:Q',
         longitude="LONC:Q",
         latitude="LATC:Q"
     )
 
 
-def chart_city_labels(cities):
+def chart_city_labels(cities, troops):
+    x_encode = alt.X(
+        'LONC:Q',
+        scale=alt.Scale(domain=[troops["LONP"].min(), troops["LONP"].max()]),
+        axis=alt.Axis(title=None, labels=True)
+    )
     return alt.Chart(cities).mark_text(
         font=CFG['LabelFont'],
         fontSize=int(CFG['CityLabelSize']),
-        dx=int(CFG['CityLabelDX']),
-        dy=int(CFG['CityLabelDY']),
+        dx=int(CFG['CityLabelDx']),
+        dy=int(CFG['CityLabelDy']),
         fontStyle=CFG['CityLabelStyle']
     ).encode(
+        x=x_encode,
         longitude="LONC:Q",
         latitude="LATC:Q",
         text="CITY"
@@ -91,25 +100,11 @@ def chart_movement_lines(troops, temps):
     )
 
 
-def chart_movements(troops, cities):
-    adv_troops = data.get_troop_data(None, 'A')
-    ret_troops = data.get_troop_data(None, 'R')
-    return\
-        chart_troops(adv_troops) +\
-        chart_troops(ret_troops, advancing=False) +\
-        chart_troop_labels(troops) +\
-        chart_cities(cities) + chart_city_labels(cities)\
-        .properties(
-            height=int(CFG['MovementChartHeight']),
-            title="Figurative Map of the successive losses in men of the French Army in the Russian campaign 1812–1813."
-        )
-
-
 def get_temp_encodes(temps, troops):
     x_encode = alt.X(
         'LONT:Q',
         scale=alt.Scale(domain=[troops["LONP"].min(), troops["LONP"].max()]),
-        axis=alt.Axis(title=None, labels=False))
+        axis=alt.Axis(title=None, labels=True, grid=True, gridColor=CFG['TempGridColor']))
     y_encode = alt.Y(
         'TEMP',
         scale=alt.Scale(domain=[temps["TEMP"].min() - 5, temps["TEMP"].max() + 5]),
@@ -119,26 +114,25 @@ def get_temp_encodes(temps, troops):
 
 
 def chart_retreat_temp(temps, troops):
-    x_encode, y_encode = get_temp_encodes(temps, troops)
-
     return alt.Chart(temps).mark_line(
         color=CFG['TempColor'],
         strokeWidth=int(CFG['TempStrokeWidth'])
     ).encode(
-        x=x_encode,
-        y=y_encode
+        x='LONT:Q',
+        y='TEMP:Q'
     )
 
 
 def chart_temp_markers(temps, troops):
-    x_encode, y_encode = get_temp_encodes(temps, troops)
-
     return alt.Chart(temps).mark_circle(
         size=int(CFG['TempMarkerSize']),
         color=CFG['TempColor']
     ).encode(
-        x=x_encode,
-        y=y_encode
+        x='LONT:Q',
+        y='TEMP:Q',
+        tooltip=[
+            alt.Tooltip('LONT', title='Longitude')
+        ]
     )
 
 
@@ -148,8 +142,8 @@ def chart_temp_labels(temps, troops):
     return alt.Chart(temps).mark_text(
         font=CFG['LabelFont'],
         fontSize=int(CFG['TempLabelSize']),
-        dx=int(CFG['TempLabelDX']),
-        dy=int(CFG['TempLabelDY']),
+        dx=int(CFG['TempLabelDx']),
+        dy=int(CFG['TempLabelDy']),
         fontStyle=CFG['TempLabelStyle']
     ).encode(
         x=x_encode,
@@ -163,9 +157,23 @@ def chart_temp_lines(temps):
         color='black',
         strokeWidth=1
     ).encode(
-        x=alt.X('LONT'),
-        y=alt.Y('TEMP:Q')
+        x='LONT',
+        y='TEMP:Q'
     )
+
+
+def chart_movements(troops, cities):
+    adv_troops = data.get_troop_data(None, 'A')
+    ret_troops = data.get_troop_data(None, 'R')
+    return\
+        chart_troops(adv_troops) +\
+        chart_troops(ret_troops, advancing=False) +\
+        chart_troop_labels(troops) +\
+        chart_cities(cities, troops) + chart_city_labels(cities, troops)\
+        .properties(
+            height=int(CFG['MovementChartHeight']),
+            title="Figurative Map of the successive losses in men of the French Army in the Russian campaign 1812–1813."
+        )
 
 
 def chart_temperature(temps, troops):
