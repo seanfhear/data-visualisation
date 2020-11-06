@@ -17,7 +17,7 @@ def get_troop_data(df, direction=None):
     elif direction == 'R':
         df = get_data(RET_FILENAME)
 
-    df = df[["LONP", "LATP", "SURV", "DIR", "DIV", "ORD"]]
+    df = df[["LONP", "LATP", "SURV", "DIR", "DIV"]]
     return df[df["LONP"].notna()]
 
 

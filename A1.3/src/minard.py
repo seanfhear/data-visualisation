@@ -7,7 +7,7 @@ cfg.read("./config.cfg")
 CFG = cfg['DEFAULT']
 
 
-def chart_troops(troops, advancing=True):
+def chart_troops_paths(troops, advancing=True):
     if advancing:
         domain = CFG['AdvDomain'].split(',')
     else:
@@ -59,14 +59,19 @@ def chart_troop_labels(troops):
     )
 
 
-def chart_cities(cities, troops):
+def chart_cities(cities):
     return alt.Chart(cities).mark_circle(
         size=int(CFG['CitySize']),
         color=CFG['CityColor']
     ).encode(
         x='LONC:Q',
         longitude="LONC:Q",
-        latitude="LATC:Q"
+        latitude="LATC:Q",
+        tooltip=[
+            alt.Tooltip('CITY', title='City'),
+            alt.Tooltip('LONC', title='Longitude'),
+            alt.Tooltip('LATC', title='Latitude')
+        ]
     )
 
 
@@ -90,7 +95,7 @@ def chart_city_labels(cities, troops):
     )
 
 
-def chart_movement_lines(troops, temps):
+def chart_paths_lines(troops, temps):
     return alt.Chart(temps, troops).mark_rule(
         color='black',
         strokeWidth=1
@@ -113,7 +118,7 @@ def get_temp_encodes(temps, troops):
     return x_encode, y_encode
 
 
-def chart_retreat_temp(temps, troops):
+def chart_retreat_temp(temps):
     return alt.Chart(temps).mark_line(
         color=CFG['TempColor'],
         strokeWidth=int(CFG['TempStrokeWidth'])
@@ -123,7 +128,7 @@ def chart_retreat_temp(temps, troops):
     )
 
 
-def chart_temp_markers(temps, troops):
+def chart_temp_markers(temps):
     return alt.Chart(temps).mark_circle(
         size=int(CFG['TempMarkerSize']),
         color=CFG['TempColor']
@@ -162,14 +167,13 @@ def chart_temp_lines(temps):
     )
 
 
-def chart_movements(troops, cities):
+def chart_paths(troops, cities):
     adv_troops = data.get_troop_data(None, 'A')
     ret_troops = data.get_troop_data(None, 'R')
-    return\
-        chart_troops(adv_troops) +\
-        chart_troops(ret_troops, advancing=False) +\
-        chart_troop_labels(troops) +\
-        chart_cities(cities, troops) + chart_city_labels(cities, troops)\
+    return \
+        chart_troops_paths(ret_troops, advancing=False) + \
+        chart_troops_paths(adv_troops) + \
+        chart_cities(cities) + chart_city_labels(cities, troops)\
         .properties(
             height=int(CFG['MovementChartHeight']),
             title="Figurative Map of the successive losses in men of the French Army in the Russian campaign 1812–1813."
@@ -178,10 +182,12 @@ def chart_movements(troops, cities):
 
 def chart_temperature(temps, troops):
     return \
-        chart_retreat_temp(temps, troops) + \
-        chart_temp_markers(temps, troops) + \
+        chart_retreat_temp(temps) + \
+        chart_temp_markers(temps) + \
         chart_temp_labels(temps, troops)\
-        .properties(height=int(CFG['TempChartHeight']), title='GRAPHIC TABLE of the temperature in degrees below zero of the Réaumur thermometer')
+        .properties(height=int(CFG['TempChartHeight']),
+                    title='GRAPHIC TABLE of the temperature in degrees below zero of the Réaumur thermometer during '
+                          'the retreat.')
 
 
 def chart_all(df):
@@ -189,7 +195,7 @@ def chart_all(df):
     cities_df = data.get_city_data(df)
     temps_df = data.get_temp_data(df)
 
-    complete_chart = alt.vconcat(chart_movements(troops_df, cities_df), chart_temperature(temps_df, troops_df))
+    complete_chart = alt.vconcat(chart_paths(troops_df, cities_df), chart_temperature(temps_df, troops_df))
     return complete_chart.configure(
         background=CFG['BackgroundColor']
     ).configure_view(
