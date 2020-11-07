@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
 FILENAME = "../data/minard-data.csv"
 ADV_FILENAME = "../data/minard-data-adv.csv"
 RET_FILENAME = "../data/minard-data-ret.csv"
@@ -30,14 +29,11 @@ def get_temp_data(df):
     df = df[["LONT", "TEMP", "DAYS", "MON", "DAY"]]
     df = df[df["LONT"].notna()]
 
-    df['DAY'] = df['DAY'].astype('str')
-    df['DAY'] = df['DAY'].str.strip('.0')
+    df['DAY'] = df['DAY'].astype('str').str.strip('.0')
     df['MON'] = df['MON'].astype('str')
 
-    df['DATE'] = df[['DAY', 'MON']].agg('-'.join, axis=1)
-    df = df.drop(columns=["MON", "DAY"])
-    df = df.replace('nan-nan', np.nan)
-    df["DATE"] = df.fillna("").apply(axis=1, func=lambda row: "{}°  {}"
-                                     .format(str(row[1])[:-2], row[3].replace("-", ", ")))
+    df['DATE'] = df[['DAY', 'MON']].agg(', '.join, axis=1).replace('nan, nan', "")
+    df["LABEL"] = df.apply(axis=1, func=lambda row: "{}°  {}"
+                           .format(str(row[1])[:-2], row[5].replace("-", ", ")))
 
     return df

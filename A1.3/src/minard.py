@@ -44,21 +44,6 @@ def chart_troops_paths(troops, advancing=True):
     )
 
 
-def chart_troop_labels(troops):
-    return alt.Chart(troops).mark_text(
-        font=CFG['LabelFont'],
-        fontSize=int(CFG['TroopLabelSize']),
-        dx=int(CFG['TroopLabelDx']),
-        dy=int(CFG['TroopLabelDy']),
-        angle=int(CFG['TroopLabelAngle'])
-    ).encode(
-        x='LONP:Q',
-        longitude="LONP:Q",
-        latitude="LATP:Q",
-        text="SURV"
-    )
-
-
 def chart_cities(cities):
     return alt.Chart(cities).mark_circle(
         size=int(CFG['CitySize']),
@@ -95,16 +80,6 @@ def chart_city_labels(cities, troops):
     )
 
 
-def chart_paths_lines(troops, temps):
-    return alt.Chart(temps, troops).mark_rule(
-        color='black',
-        strokeWidth=1
-    ).encode(
-        x=alt.X('LONT'),
-        y=alt.Y(troops.LONP)
-    )
-
-
 def get_temp_encodes(temps, troops):
     x_encode = alt.X(
         'LONT:Q',
@@ -136,6 +111,8 @@ def chart_temp_markers(temps):
         x='LONT:Q',
         y='TEMP:Q',
         tooltip=[
+            alt.Tooltip('TEMP', title='Degrees'),
+            alt.Tooltip('DATE', title='Date'),
             alt.Tooltip('LONT', title='Longitude')
         ]
     )
@@ -153,17 +130,7 @@ def chart_temp_labels(temps, troops):
     ).encode(
         x=x_encode,
         y=y_encode,
-        text="DATE"
-    )
-
-
-def chart_temp_lines(temps):
-    return alt.Chart(temps).mark_rule(
-        color='black',
-        strokeWidth=1
-    ).encode(
-        x='LONT',
-        y='TEMP:Q'
+        text="LABEL"
     )
 
 
@@ -173,9 +140,10 @@ def chart_paths(troops, cities):
     return \
         chart_troops_paths(ret_troops, advancing=False) + \
         chart_troops_paths(adv_troops) + \
-        chart_cities(cities) + chart_city_labels(cities, troops)\
+        chart_cities(cities) + \
+        chart_city_labels(cities, troops)\
         .properties(
-            height=int(CFG['MovementChartHeight']),
+            height=int(CFG['PathsChartHeight']),
             title="Figurative Map of the successive losses in men of the French Army in the Russian campaign 1812–1813."
         )
 
