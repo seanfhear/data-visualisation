@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 FILENAME = "../data/minard-data.csv"
 ADV_FILENAME = "../data/minard-data-adv.csv"
@@ -33,7 +32,6 @@ def get_temp_data(df):
     df['MON'] = df['MON'].astype('str')
 
     df['DATE'] = df[['DAY', 'MON']].agg(', '.join, axis=1).replace('nan, nan', "")
-    df["LABEL"] = df.apply(axis=1, func=lambda row: "{}°  {}"
-                           .format(str(row[1])[:-2], row[5].replace("-", ", ")))
+    df["LABEL"] = df.apply(axis=1, func=lambda row: "{}°  {}".format(str(row[1])[:-2], row[5]))
 
     return df
